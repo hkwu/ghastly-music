@@ -6,6 +6,7 @@ import leave from './commands/leave';
 import pause from './commands/pause';
 import play from './commands/play';
 import resume from './commands/resume';
+import stop from './commands/stop';
 
 const client = new Client({ prefix: '.' });
 
@@ -15,6 +16,7 @@ client.dispatcher.load(
   pause,
   play,
   resume,
+  stop,
 );
 
 client.services.bind('music.youtube', new YouTube(config.get('YouTube.apiKey')));
