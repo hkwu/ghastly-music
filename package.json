@@ -25,11 +25,14 @@
     "prepublishOnly": "npm run build && yarn test"
   },
   "dependencies": {
+    "config": "^1.25.1",
     "discord.js": "^11.0.0",
     "erlpack": "hammerandchisel/erlpack",
     "ghastly": "^0.2.0",
     "node-opus": "^0.2.4",
-    "uws": "^0.14.1"
+    "simple-youtube-api": "^2.1.0",
+    "uws": "^0.14.1",
+    "ytdl-core": "^0.10.3"
   },
   "devDependencies": {
     "babel-cli": "^6.24.0",
