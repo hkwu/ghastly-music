@@ -1,0 +1,45 @@
+{
+  "name": "ghastly-music",
+  "version": "0.1.0",
+  "description": "Discord music bot using Ghastly.",
+  "homepage": "https://github.com/hkwu/ghastly-music#readme",
+  "bugs": {
+    "url": "https://github.com/hkwu/ghastly-music/issues"
+  },
+  "license": "MIT",
+  "author": "Kelvin Wu <kelvinwu1996@gmail.com>",
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hkwu/ghastly-music.git"
+  },
+  "scripts": {
+    "start": "node --harmony lib/bot.js",
+    "build": "babel src --out-dir lib",
+    "watch": "babel --watch src --out-dir lib",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "test": "npm run lint && npm run build",
+    "prepublishOnly": "npm run build && yarn test"
+  },
+  "dependencies": {
+    "discord.js": "^11.0.0",
+    "erlpack": "hammerandchisel/erlpack",
+    "ghastly": "^0.2.0",
+    "node-opus": "^0.2.4",
+    "uws": "^0.14.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.0",
+    "babel-plugin-transform-object-rest-spread": "^6.23.0",
+    "babel-preset-env": "^1.3.2",
+    "eslint": "^3.18.0",
+    "eslint-config-airbnb-base": "^11.1.2",
+    "eslint-plugin-import": "^2.2.0"
+  },
+  "engines": {
+    "node": ">=7"
+  }
+}
