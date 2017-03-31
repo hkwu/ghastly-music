@@ -34,6 +34,9 @@ export default function play() {
     const { query } = args;
     const {
       channel,
+      member: {
+        id,
+      },
       guild: {
         voiceConnection,
       },
@@ -56,8 +59,6 @@ export default function play() {
           },
         } = await youtube.getVideo(query);
 
-        const stream = ytdl(url, { filter: 'audioonly' });
-
         await dispatch(generateEmbed({
           title,
           description,
@@ -66,8 +67,14 @@ export default function play() {
           url,
         }));
 
-        return new VoiceResponse('stream', stream);
-      } catch (error) {
+        const stream = ytdl(url, { filter: 'audioonly' });
+        const dispatcher = await dispatch(new VoiceResponse('stream', stream));
+
+        return dispatcher.once('end', () => {
+          voiceConnection.disconnect();
+          dispatch('Party\'s over, dude!');
+        });
+      } catch (error) {console.log(error)
         return 'Had some problem finding that video, dude.';
       }
     }
@@ -90,11 +97,21 @@ export default function play() {
       await dispatch(embed);
 
       try {
-        const collected = await channel.awaitMessages(({ content }) => /^[1-5]$/.test(content), {
+        const collected = await channel.awaitMessages((collectedMessage) => {
+          const {
+            content,
+            member: {
+              id: collectedId,
+            },
+          } = collectedMessage;
+
+          return collectedId === id && /^[1-5]$/.test(content);
+        }, {
           time: 60 * 1000,
           maxMatches: 1,
           errors: ['time'],
         });
+
         const { content } = collected.first();
         const {
           title,
@@ -115,8 +132,12 @@ export default function play() {
         }));
 
         const stream = ytdl(url, { filter: 'audioonly' });
+        const dispatcher = await dispatch(new VoiceResponse('stream', stream));
 
-        return new VoiceResponse('stream', stream);
+        return dispatcher.once('end', () => {
+          voiceConnection.disconnect();
+          dispatch('Party\'s over, dude!');
+        });
       } catch (error) {
         return 'You didn\'t choose a video to play, dude. Forget about it.';
       }
