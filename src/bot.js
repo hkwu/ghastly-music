@@ -8,6 +8,7 @@ import pause from './commands/pause';
 import play from './commands/play';
 import queue from './commands/queue';
 import resume from './commands/resume';
+import skip from './commands/skip';
 import stop from './commands/stop';
 
 const client = new Client({ prefix: '.' });
@@ -19,6 +20,7 @@ client.dispatcher.load(
   play,
   queue,
   resume,
+  skip,
   stop,
 );
 
