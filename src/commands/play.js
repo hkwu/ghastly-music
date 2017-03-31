@@ -1,34 +1,70 @@
 import ytdl from 'ytdl-core';
 import { RichEmbed } from 'discord.js';
 import { VoiceResponse } from 'ghastly/lib/command';
+import expectGuild from '../middleware/expectGuild';
+
+function generateEmbed(data) {
+  const {
+    title,
+    description,
+    duration,
+    channelTitle,
+    url,
+  } = data;
+
+  const embed = new RichEmbed();
+
+  embed.setTitle(`[NOW PLAYING] ${title}`)
+    .setDescription(description)
+    .setURL(url);
+
+  if (duration) {
+    const { hours, minutes, seconds } = duration;
+
+    embed.addField('Duration', `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`, true);
+  }
+
+  embed.addField('Channel', channelTitle, true);
+
+  return embed;
+}
 
 export default function play() {
-  async function handler({ args, dispatch, services }) {
+  async function handler({ args, dispatch, message, services }) {
     const { query } = args;
+    const {
+      channel,
+      guild: {
+        voiceConnection,
+      },
+    } = message;
     const youtube = services.fetch('music.youtube');
 
-    if (/^https?/i.test(query)) {
-      const embed = new RichEmbed();
+    if (!voiceConnection) {
+      return 'I\'m not in a voice channel, dude.';
+    }
 
+    if (/^https?/i.test(query)) {
       try {
         const {
           title,
           description,
           duration,
           url,
+          channel: {
+            title: channelTitle,
+          },
         } = await youtube.getVideo(query);
-
-        embed.setTitle(`NOW PLAYING - ${title}`)
-          .setDescription(description)
-          .setURL(url);
-
-        if (duration) {
-          embed.addField('Duration', `${duration.hours}:${duration.minutes}:${duration.seconds}`);
-        }
 
         const stream = ytdl(url, { filter: 'audioonly' });
 
-        await dispatch(embed);
+        await dispatch(generateEmbed({
+          title,
+          description,
+          duration,
+          channelTitle,
+          url,
+        }));
 
         return new VoiceResponse('stream', stream);
       } catch (error) {
@@ -40,7 +76,7 @@ export default function play() {
       const embed = new RichEmbed();
       const results = await youtube.searchVideos(query);
 
-      embed.setTitle('SEARCH RESULTS').setDescription(`You searched for "${query}".`);
+      embed.setTitle('SEARCH RESULTS').setDescription(`You searched for "${query}". To play a video, enter the result number of the video (e.g. "1" to play the first result) within 60 seconds.`);
 
       results.forEach((result, index) => {
         const { title, description, publishedAt } = result;
@@ -51,7 +87,39 @@ export default function play() {
         );
       });
 
-      return embed;
+      await dispatch(embed);
+
+      try {
+        const collected = await channel.awaitMessages(({ content }) => /^[1-5]$/.test(content), {
+          time: 60 * 1000,
+          maxMatches: 1,
+          errors: ['time'],
+        });
+        const { content } = collected.first();
+        const {
+          title,
+          description,
+          url,
+          channel: {
+            title: channelTitle,
+          },
+        } = results[parseInt(content, 10) - 1];
+        const { duration } = await youtube.getVideo(url);
+
+        await dispatch(generateEmbed({
+          title,
+          description,
+          duration,
+          channelTitle,
+          url,
+        }));
+
+        const stream = ytdl(url, { filter: 'audioonly' });
+
+        return new VoiceResponse('stream', stream);
+      } catch (error) {
+        return 'You didn\'t choose a video to play, dude. Forget about it.';
+      }
     } catch (error) {
       return 'Had some problem finding that video, dude.';
     }
@@ -61,5 +129,8 @@ export default function play() {
     handler,
     triggers: ['play'],
     parameters: ['query...'],
+    middleware: [
+      expectGuild(),
+    ],
   };
 }
