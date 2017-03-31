@@ -71,10 +71,9 @@ export default function play() {
         const dispatcher = await dispatch(new VoiceResponse('stream', stream));
 
         return dispatcher.once('end', () => {
-          voiceConnection.disconnect();
           dispatch('Party\'s over, dude!');
         });
-      } catch (error) {console.log(error)
+      } catch (error) {
         return 'Had some problem finding that video, dude.';
       }
     }
@@ -135,7 +134,6 @@ export default function play() {
         const dispatcher = await dispatch(new VoiceResponse('stream', stream));
 
         return dispatcher.once('end', () => {
-          voiceConnection.disconnect();
           dispatch('Party\'s over, dude!');
         });
       } catch (error) {
