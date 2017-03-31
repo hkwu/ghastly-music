@@ -24,11 +24,11 @@ export default function queue() {
       .slice(0, 10)
       .forEach((item, index) => {
         if (item instanceof YouTubeItem) {
-          const { title, description, publishedAt } = item;
+          const { title, publishedAt } = item;
 
           embed.addField(
             `${index + 1}. ${title} [${publishedAt.getFullYear()}-${publishedAt.getMonth() + 1}-${publishedAt.getDate()}]`,
-            `${description.slice(0, 100)}...`,
+            '',
           );
         }
       });
