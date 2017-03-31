@@ -44,7 +44,7 @@ export default class YouTubeItem extends QueueItem {
   get formattedDuration() {
     const { hours, minutes, seconds } = this.duration;
 
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   createStream() {
