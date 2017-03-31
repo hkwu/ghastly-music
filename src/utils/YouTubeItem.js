@@ -33,7 +33,7 @@ export default class YouTubeItem extends QueueItem {
     const embed = new RichEmbed();
 
     embed.setTitle(`[NOW PLAYING] ${this.title}`)
-      .setDescription(`${this.description.slice(0, 2045)}...`)
+      .setDescription(this.description.length <= 2048 ? this.description : `${this.description.slice(0, 2045)}...`)
       .setURL(this.url)
       .addField('Duration', this.formattedDuration, true)
       .addField('Channel', this.channel.title, true);
