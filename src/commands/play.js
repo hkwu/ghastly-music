@@ -1,37 +1,30 @@
-import ytdl from 'ytdl-core';
 import { RichEmbed } from 'discord.js';
 import { VoiceResponse } from 'ghastly/lib/command';
+import YouTubeItem from '../utils/YouTubeItem';
 import expectGuild from '../middleware/expectGuild';
 
-function generateEmbed(data) {
-  const {
-    title,
-    description,
-    duration,
-    channelTitle,
-    url,
-  } = data;
+async function playVideo(queue, dispatch) {
+  const video = queue.peek();
 
-  const embed = new RichEmbed();
+  await dispatch(video.embed);
 
-  embed.setTitle(`[NOW PLAYING] ${title}`)
-    .setDescription(description)
-    .setURL(url);
+  const dispatcher = await dispatch(new VoiceResponse('stream', video.createStream()));
 
-  if (duration) {
-    const { hours, minutes, seconds } = duration;
+  return dispatcher.once('end', () => {
+    queue.dequeue();
 
-    embed.addField('Duration', `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`, true);
-  }
+    if (queue.length) {
+      return playVideo(queue, dispatch);
+    }
 
-  embed.addField('Channel', channelTitle, true);
-
-  return embed;
+    return dispatch('Party\'s over, dude!');
+  });
 }
 
 export default function play() {
-  async function handler({ args, dispatch, message, services }) {
+  async function handler({ args, dispatch, formatter, message, services }) {
     const { query } = args;
+    const { bold } = formatter;
     const {
       channel,
       member: {
@@ -41,106 +34,72 @@ export default function play() {
         voiceConnection,
       },
     } = message;
+    const queue = services.fetch('music.queue');
     const youtube = services.fetch('music.youtube');
 
     if (!voiceConnection) {
       return 'I\'m not in a voice channel, dude.';
     }
 
+    let video;
+
     if (/^https?/i.test(query)) {
       try {
-        const {
-          title,
-          description,
-          duration,
-          url,
-          channel: {
-            title: channelTitle,
-          },
-        } = await youtube.getVideo(query);
+        video = new YouTubeItem(await youtube.getVideo(query));
+      } catch (error) {
+        return 'Had some problem finding that video, dude.';
+      }
+    } else {
+      try {
+        const embed = new RichEmbed();
+        const results = await youtube.searchVideos(query);
 
-        await dispatch(generateEmbed({
-          title,
-          description,
-          duration,
-          channelTitle,
-          url,
-        }));
+        embed.setTitle('SEARCH RESULTS').setDescription(`You searched for "${query}". To play a video, enter the result number of the video (e.g. "1" to play the first result) within 60 seconds.`);
 
-        const stream = ytdl(url, { filter: 'audioonly' });
-        const dispatcher = await dispatch(new VoiceResponse('stream', stream));
+        results.forEach((result, index) => {
+          const { title, description, publishedAt } = result;
 
-        return dispatcher.once('end', () => {
-          dispatch('Party\'s over, dude!');
+          embed.addField(
+            `${index + 1}. ${title} [${publishedAt.getFullYear()}-${publishedAt.getMonth() + 1}-${publishedAt.getDate()}]`,
+            description,
+          );
         });
+
+        await dispatch(embed);
+
+        try {
+          const collected = await channel.awaitMessages((collectedMessage) => {
+            const {
+              content,
+              member: {
+                id: collectedId,
+              },
+            } = collectedMessage;
+
+            return collectedId === id && /^[1-5]$/.test(content);
+          }, {
+            time: 60 * 1000,
+            maxMatches: 1,
+            errors: ['time'],
+          });
+
+          const { content } = collected.first();
+          const { url } = results[parseInt(content, 10) - 1];
+          video = new YouTubeItem(await youtube.getVideo(url));
+        } catch (error) {
+          return 'You didn\'t choose a video to play, dude. Forget about it.';
+        }
       } catch (error) {
         return 'Had some problem finding that video, dude.';
       }
     }
 
-    try {
-      const embed = new RichEmbed();
-      const results = await youtube.searchVideos(query);
+    queue.enqueue(video);
 
-      embed.setTitle('SEARCH RESULTS').setDescription(`You searched for "${query}". To play a video, enter the result number of the video (e.g. "1" to play the first result) within 60 seconds.`);
+    await dispatch(`Successfully queued ${bold(video.title)}.`);
 
-      results.forEach((result, index) => {
-        const { title, description, publishedAt } = result;
-
-        embed.addField(
-          `${index + 1}. ${title} [${publishedAt.getFullYear()}-${publishedAt.getMonth() + 1}-${publishedAt.getDate()}]`,
-          description,
-        );
-      });
-
-      await dispatch(embed);
-
-      try {
-        const collected = await channel.awaitMessages((collectedMessage) => {
-          const {
-            content,
-            member: {
-              id: collectedId,
-            },
-          } = collectedMessage;
-
-          return collectedId === id && /^[1-5]$/.test(content);
-        }, {
-          time: 60 * 1000,
-          maxMatches: 1,
-          errors: ['time'],
-        });
-
-        const { content } = collected.first();
-        const {
-          title,
-          description,
-          url,
-          channel: {
-            title: channelTitle,
-          },
-        } = results[parseInt(content, 10) - 1];
-        const { duration } = await youtube.getVideo(url);
-
-        await dispatch(generateEmbed({
-          title,
-          description,
-          duration,
-          channelTitle,
-          url,
-        }));
-
-        const stream = ytdl(url, { filter: 'audioonly' });
-        const dispatcher = await dispatch(new VoiceResponse('stream', stream));
-
-        return dispatcher.once('end', () => {
-          dispatch('Party\'s over, dude!');
-        });
-      } catch (error) {
-        return 'You didn\'t choose a video to play, dude. Forget about it.';
-      }
-    } catch (error) {
-      return 'Had some problem finding that video, dude.';
+    if (queue.length === 1) {
+      return playVideo(queue, dispatch);
     }
   }
 
