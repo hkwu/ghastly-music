@@ -1,17 +1,28 @@
 import expectGuild from '../middleware/expectGuild';
 
 export default function skip() {
-  async function handler({ formatter, message, services }) {
+  async function handler({ dispatch, formatter, message, services }) {
     const { bold } = formatter;
+    const {
+      guild: {
+        voiceConnection: {
+          player: {
+            dispatcher,
+          },
+        },
+      },
+    } = message;
     const queue = services.fetch('music.queue');
 
     if (!queue.length) {
       return 'Dude, there\'s nothing in the queue.';
     }
 
-    const item = queue.dequeue();
+    const item = queue.peek();
 
-    return `Successfully skipped ${bold(item.title)}.`;
+    await dispatch(`Successfully skipped ${bold(item.title)}.`);
+
+    return dispatcher.end();
   }
 
   return {
