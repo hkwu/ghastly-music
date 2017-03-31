@@ -13,6 +13,10 @@ export default class MusicQueue {
     return [...this.queue];
   }
 
+  has(id) {
+    return this.queued.has(id);
+  }
+
   enqueue(item) {
     if (!this.queued.has(item.id)) {
       this.queue.push(item);
@@ -23,7 +27,9 @@ export default class MusicQueue {
   dequeue() {
     const item = this.queue.shift();
 
-    this.queued.delete(item.id);
+    if (item) {
+      this.queued.delete(item.id);
+    }
 
     return item;
   }

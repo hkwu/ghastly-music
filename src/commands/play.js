@@ -94,6 +94,10 @@ export default function play() {
       }
     }
 
+    if (queue.has(video.id)) {
+      return 'You\'ve already queued that, dude.';
+    }
+
     queue.enqueue(video);
 
     await dispatch(`Successfully queued ${bold(video.title)}.`);
