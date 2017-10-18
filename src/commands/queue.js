@@ -1,6 +1,6 @@
 import { RichEmbed } from 'discord.js';
+import { expectGuild } from 'ghastly/middleware';
 import YouTubeItem from '../utils/YouTubeItem';
-import expectGuild from '../middleware/expectGuild';
 
 export default function queue() {
   async function handler({ formatter, message, services }) {
@@ -10,7 +10,7 @@ export default function queue() {
         voiceConnection,
       },
     } = message;
-    const musicQueue = services.fetch('music.queue');
+    const musicQueue = services.get('music.queue');
 
     if (!voiceConnection) {
       return 'I\'m not in a voice channel, dude.';

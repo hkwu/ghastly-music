@@ -1,7 +1,9 @@
-import expectGuild from '../middleware/expectGuild';
+import { expectGuild } from 'ghastly/middleware';
 
 export default function skip() {
-  async function handler({ dispatch, formatter, message, services }) {
+  async function handler({
+    dispatch, formatter, message, services,
+  }) {
     const { bold } = formatter;
     const {
       guild: {
@@ -12,7 +14,7 @@ export default function skip() {
         },
       },
     } = message;
-    const queue = services.fetch('music.queue');
+    const queue = services.get('music.queue');
 
     if (!queue.length) {
       return 'Dude, there\'s nothing in the queue.';

@@ -1,4 +1,4 @@
-import expectGuild from '../middleware/expectGuild';
+import { expectGuild } from 'ghastly/middleware';
 
 export default function stop() {
   async function handler({ message }) {

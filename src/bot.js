@@ -13,7 +13,7 @@ import stop from './commands/stop';
 
 const client = new Client({ prefix: '.' });
 
-client.dispatcher.load(
+client.commands.add(
   join,
   leave,
   pause,
@@ -24,11 +24,11 @@ client.dispatcher.load(
   stop,
 );
 
-client.services.bind('music.youtube', new YouTube(config.get('YouTube.apiKey')));
-client.services.bind('music.queue', new MusicQueue());
+client.services.instance('music.youtube', new YouTube(config.get('YouTube.apiKey')));
+client.services.instance('music.queue', new MusicQueue());
 
 client.login(config.get('Discord.botToken'));
 
-client.on('dispatchError', (error) => {
-  console.log(error);
+client.on('dispatchFail', (reason, context) => {
+  console.log(reason, context.error);
 });

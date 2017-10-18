@@ -1,20 +1,20 @@
 import { RichEmbed } from 'discord.js';
-import { VoiceResponse } from 'ghastly/lib/command';
+import { VoiceResponse } from 'ghastly/command';
+import { expectGuild } from 'ghastly/middleware';
 import YouTubeItem from '../utils/YouTubeItem';
-import expectGuild from '../middleware/expectGuild';
 
-async function playVideo(queue, dispatch) {
+async function playVideo(context, queue, dispatch) {
   const video = queue.peek();
 
   await dispatch(video.embed);
 
-  const dispatcher = await dispatch(new VoiceResponse('stream', video.createStream()));
+  const dispatcher = await dispatch(new VoiceResponse(context, 'stream', video.createStream()));
 
   return dispatcher.once('end', () => {
     queue.dequeue();
 
     if (queue.length) {
-      return playVideo(queue, dispatch);
+      return playVideo(context, queue, dispatch);
     }
 
     return dispatch('Party\'s over, dude!');
@@ -22,7 +22,14 @@ async function playVideo(queue, dispatch) {
 }
 
 export default function play() {
-  async function handler({ args, dispatch, formatter, message, services }) {
+  async function handler(context) {
+    const {
+      args,
+      dispatch,
+      formatter,
+      message,
+      services,
+    } = context;
     const { query } = args;
     const { bold } = formatter;
     const {
@@ -34,8 +41,8 @@ export default function play() {
         voiceConnection,
       },
     } = message;
-    const queue = services.fetch('music.queue');
-    const youtube = services.fetch('music.youtube');
+    const queue = services.get('music.queue');
+    const youtube = services.get('music.youtube');
 
     if (!voiceConnection) {
       return 'I\'m not in a voice channel, dude.';
@@ -103,7 +110,7 @@ export default function play() {
     await dispatch(`Successfully queued ${bold(video.title)}.`);
 
     if (queue.length === 1) {
-      return playVideo(queue, dispatch);
+      return playVideo(context, queue, dispatch);
     }
   }
 

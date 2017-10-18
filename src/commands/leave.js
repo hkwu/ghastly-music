@@ -1,4 +1,4 @@
-import expectGuild from '../middleware/expectGuild';
+import { expectGuild } from 'ghastly/middleware';
 
 export default function leave() {
   async function handler({ message, services }) {
@@ -7,7 +7,7 @@ export default function leave() {
         voiceConnection,
       },
     } = message;
-    const queue = services.fetch('music.queue');
+    const queue = services.get('music.queue');
 
     if (!voiceConnection) {
       return 'I\'m not in a voice channel, dude.';
